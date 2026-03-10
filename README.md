@@ -78,7 +78,8 @@ claimsense-ai/
 │   ├── services/
 │   │   ├── llm_service.py       # Single LLM abstraction function
 │   │   ├── ocr_service.py       # Tesseract + cloud OCR
-│   │   └── pdf_service.py       # PyPDF2 text extraction
+│   │   ├── pdf_service.py       # PyPDF2 text extraction
+│   │   └── encryption_service.py # AES/Fernet PII field encryption
 │   ├── routes/
 │   │   ├── upload.py            # POST /upload-document
 │   │   ├── validate.py          # POST /validate-policy
@@ -547,6 +548,10 @@ npm run dev
    - ABHA ID is the Indian health ID format
    - FHIR/HL7 is the submission standard
 
+6. Patient PII fields are encrypted before storage using AES/Fernet encryption.
+   The encryption service protects: name, dob, phone, email, abha_id, policy_number.
+   All encryption goes through `encryption_service.py`. Never store raw PII.
+
 ---
 
 ## WHAT IS OUT OF SCOPE FOR MVP
@@ -579,7 +584,8 @@ claimsense-ai/
 │   ├── services/
 │   │   ├── llm_service.py       ← SHARED (everyone calls call_llm())
 │   │   ├── ocr_service.py       ← 👤 PERSON A (only M1 needs this)
-│   │   └── pdf_service.py       ← 👤 PERSON A (only M1 needs this)
+│   │   ├── pdf_service.py       ← 👤 PERSON A (only M1 needs this)
+│   │   └── encryption_service.py ← SHARED (PII encryption before storage)
 │   │
 │   ├── routes/
 │   │   ├── upload.py            ← 👤 PERSON A
