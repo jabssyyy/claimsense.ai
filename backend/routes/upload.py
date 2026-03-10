@@ -42,6 +42,7 @@ class UploadResponse(BaseModel):
     claim: dict | None = None
     error: str | None = None
     extraction_text_length: int | None = None
+    fraud_detection: dict | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +116,7 @@ async def upload_document(file: UploadFile = File(...)):
         success=True,
         claim=result["claim"],
         extraction_text_length=result.get("extraction_text_length"),
+        fraud_detection=result.get("fraud_detection"),
     )
 
 

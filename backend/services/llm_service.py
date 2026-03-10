@@ -2,11 +2,11 @@
 ClaimSense.ai - LLM Service
 
 CRITICAL: This is the SINGLE abstraction for ALL LLM calls in the entire system.
-Every module (M1, M2, M3) must call call_llm() from here.
+Every module (M1, M2, M3) must call call_llm() or call_llm_vision() from here.
 NEVER call Gemini directly anywhere else in the codebase.
 
 To switch from Gemini to another model (Claude, GPT, etc.):
-Change ONLY _get_client() and the API call inside call_llm().
+Change ONLY _get_client() and the API calls inside call_llm() / call_llm_vision().
 Every caller stays the same.
 """
 
@@ -37,9 +37,31 @@ def _get_client() -> genai.Client:
     return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
+def _parse_json_response(raw: str) -> dict:
+    """
+    Strip markdown code fences and parse raw LLM text as JSON.
+
+    Shared helper used by call_llm_json() and call_llm_vision_json().
+    """
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*\n?", "", cleaned)
+        cleaned = re.sub(r"\n?```\s*$", "", cleaned)
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError as e:
+        logger.error(
+            "Failed to parse LLM response as JSON | error=%s | response=%.500s",
+            str(e),
+            raw,
+        )
+        raise
+
+
 def call_llm(prompt: str, system: str = "") -> str:
     """
-    Single abstraction for all LLM calls in ClaimSense.ai.
+    Single abstraction for all text-only LLM calls in ClaimSense.ai.
 
     Args:
         prompt: The user/task prompt to send to the model.
@@ -96,35 +118,82 @@ def call_llm_json(prompt: str, system: str = "") -> dict:
     Call the LLM and parse the response as JSON.
 
     Convenience wrapper around call_llm() that strips markdown code fences
-    and parses the response as JSON. Useful for M1 extraction and M2 policy
-    parsing where the LLM is instructed to return only JSON.
-
-    Args:
-        prompt: The user/task prompt (should instruct the LLM to return JSON).
-        system: Optional system instruction.
-
-    Returns:
-        Parsed JSON as a Python dict.
-
-    Raises:
-        json.JSONDecodeError: If the response cannot be parsed as JSON.
+    and parses the response as JSON.
     """
     raw = call_llm(prompt, system)
+    return _parse_json_response(raw)
 
-    # Strip markdown code fences if present (```json ... ``` or ``` ... ```)
-    cleaned = raw.strip()
-    if cleaned.startswith("```"):
-        # Remove opening fence (with optional language tag)
-        cleaned = re.sub(r"^```(?:json)?\s*\n?", "", cleaned)
-        # Remove closing fence
-        cleaned = re.sub(r"\n?```\s*$", "", cleaned)
+
+def call_llm_vision(
+    prompt: str,
+    images: list[bytes],
+    system: str = "",
+    mime_type: str = "image/png",
+) -> str:
+    """
+    Multimodal LLM call -- send text + images to Gemini Vision.
+
+    Args:
+        prompt: The text prompt describing what to extract/analyze.
+        images: List of image byte arrays (PNG or JPEG).
+        system: Optional system instruction.
+        mime_type: MIME type of all images (default "image/png").
+
+    Returns:
+        The model's text response as a string.
+    """
+    settings = get_settings()
+    model = settings.GEMINI_MODEL
+
+    logger.info(
+        "LLM vision call starting | model=%s | images=%d | prompt_length=%d",
+        model, len(images), len(prompt),
+    )
 
     try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError as e:
+        client = _get_client()
+
+        config = types.GenerateContentConfig(
+            temperature=0.1,
+            max_output_tokens=4096,
+        )
+        if system:
+            config.system_instruction = system
+
+        # Build multimodal contents: text prompt + image parts
+        contents = [prompt]
+        for img_bytes in images:
+            contents.append(types.Part.from_bytes(data=img_bytes, mime_type=mime_type))
+
+        response = client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=config,
+        )
+
+        result = response.text
+        logger.info("LLM vision call succeeded | response_length=%d", len(result))
+        return result
+
+    except Exception as e:
         logger.error(
-            "Failed to parse LLM response as JSON | error=%s | response=%.500s",
+            "LLM vision call failed | error=%s | type=%s",
             str(e),
-            raw,
+            type(e).__name__,
         )
         raise
+
+
+def call_llm_vision_json(
+    prompt: str,
+    images: list[bytes],
+    system: str = "",
+    mime_type: str = "image/png",
+) -> dict:
+    """
+    Multimodal LLM call that returns parsed JSON.
+
+    Combines call_llm_vision() + JSON parsing.
+    """
+    raw = call_llm_vision(prompt, images, system, mime_type)
+    return _parse_json_response(raw)

@@ -9,6 +9,7 @@ If the PDF is scanned (no text layer), converts pages to images for OCR (Tier 3/
 
 import hashlib
 import logging
+import os
 from pathlib import Path
 from typing import Tuple, List
 
@@ -105,6 +106,19 @@ def extract_text_from_pdf(file_bytes: bytes) -> Tuple[str, int]:
         return ("", 0)
 
 
+def _find_poppler_path() -> str | None:
+    """Auto-detect poppler bin directory on Windows (winget install location)."""
+    import platform
+    import glob as glob_mod
+    if platform.system() != "Windows":
+        return None
+    pattern = os.path.expanduser(
+        "~/AppData/Local/Microsoft/WinGet/Packages/oschwartz10612.Poppler_*/poppler-*/Library/bin"
+    )
+    matches = sorted(glob_mod.glob(pattern), reverse=True)
+    return matches[0] if matches else None
+
+
 def pdf_pages_to_images(file_bytes: bytes) -> List[Image.Image]:
     """
     Convert PDF pages to PIL Images for OCR processing.
@@ -121,7 +135,11 @@ def pdf_pages_to_images(file_bytes: bytes) -> List[Image.Image]:
     try:
         from pdf2image import convert_from_bytes
 
-        images = convert_from_bytes(file_bytes, dpi=300)
+        poppler_path = _find_poppler_path()
+        kwargs = {"dpi": 300}
+        if poppler_path:
+            kwargs["poppler_path"] = poppler_path
+        images = convert_from_bytes(file_bytes, **kwargs)
         logger.info("Converted PDF to %d images for OCR", len(images))
         return images
 

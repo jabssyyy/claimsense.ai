@@ -26,14 +26,16 @@ ClaimSense.ai catches everything before the claim is submitted. Not after reject
 
 ## MVP SCOPE
 
-The MVP covers three modules only. M4 (Fraud Detection) and M5 (Zero Wait Discharge)
-are out of scope for the hackathon build. They exist in the full design but will be
-demoed with pre-cached outputs, not live code.
+The MVP covers three modules plus document-level fraud detection.
+M4 (Fraud Graph Network) and M5 (Zero Wait Discharge) remain out of scope
+for the hackathon build. They exist in the full design but will be demoed
+with pre-cached outputs, not live code.
 
 **In scope:**
-- M1 - DocTriage Pipeline (document upload and extraction)
+- M1 - DocTriage Pipeline (document upload, extraction, and fraud detection)
 - M2 - Policy Rules Engine (coverage validation)
 - M3 - Clean Claim Guarantee (final quality check and submission package)
+- Document Fraud Detection (integrated into M1 via Gemini Vision)
 
 ---
 
@@ -45,7 +47,9 @@ demoed with pre-cached outputs, not live code.
 | Backend | Python FastAPI |
 | LLM | Gemini API (Google AI Studio) |
 | OCR Tier 3 | Tesseract (local, free) |
-| OCR Tier 4 | AWS Textract or Google Cloud Vision (free tier for demo) |
+| OCR Tier 4 | Gemini Vision API (uses existing Gemini key) |
+| PDF to Image | Poppler + pdf2image |
+| Fraud Detection | Gemini Vision API (document tampering analysis) |
 | Database | PostgreSQL |
 | Storage | Local file storage for demo |
 
@@ -54,10 +58,17 @@ from Gemini to another model is one line change. Never hardcode direct Gemini ca
 scattered across the codebase.
 
 ```python
-# All LLM calls go through this single function
+# All LLM calls go through these abstraction functions
 def call_llm(prompt: str, system: str = "") -> str:
-    # Swap Gemini for Claude or any other model here in one place
+    # Text-only LLM call. Swap Gemini for any other model here.
     pass
+
+def call_llm_vision(prompt: str, images: list[bytes], system: str = "") -> str:
+    # Multimodal LLM call for OCR and fraud detection on page images.
+    pass
+
+def call_llm_json(prompt, system) -> dict:    # Text -> parsed JSON
+def call_llm_vision_json(prompt, images, system) -> dict:  # Vision -> parsed JSON
 ```
 
 ---
@@ -77,7 +88,7 @@ claimsense-ai/
 │   │   └── m3_clean_claim.py    # M3 logic
 │   ├── services/
 │   │   ├── llm_service.py       # Single LLM abstraction function
-│   │   ├── ocr_service.py       # Tesseract + cloud OCR
+│   │   ├── ocr_service.py       # Tesseract + Gemini Vision OCR
 │   │   ├── pdf_service.py       # PyPDF2 text extraction
 │   │   └── encryption_service.py # AES/Fernet PII field encryption
 │   ├── routes/
@@ -213,21 +224,44 @@ Tesseract gives a confidence score per field.
 If confidence above 85% - accept.
 If confidence below 85% - escalate to Tier 4.
 
-**Tier 4 - Deep Vision Processing**
-Cloud OCR. Use AWS Textract or Google Cloud Vision.
-Handles handwriting, low quality scans, regional language text.
+**Tier 4 - Gemini Vision OCR**
+Uses the Gemini Vision API (same API key as text extraction, no extra cost).
+Handles handwriting, low quality scans, regional Indian language text.
 Only approximately 20% of documents reach this tier.
-Has per-page cost - use sparingly. Free tier covers demo volume.
+Returns high-confidence extraction (0.92) for content Tesseract cannot read.
+
+### Document Fraud Detection (integrated into M1)
+After text extraction, M1 runs a parallel fraud detection pass using Gemini Vision.
+Page images are sent with a forensic analysis prompt that checks for:
+- Edited or replaced text (font/size inconsistencies)
+- Digital manipulation artifacts (cut-paste, clone stamps)
+- Altered monetary amounts or dates
+- Inconsistent document formatting
+- Mismatched signatures or stamps
+
+Returns a fraud assessment alongside the extracted claim:
+```json
+{
+  "risk_level": "low | medium | high",
+  "risk_score": 0.05,
+  "findings": [],
+  "summary": "The document appears genuine with no signs of tampering."
+}
+```
+
+**Non-blocking design:** Fraud detection failures never stop the pipeline.
+If Gemini Vision is unavailable or errors, processing continues normally
+with fraud_detection as null in the response.
 
 ### Output
-Structured claim JSON record. This moves to M2.
+Structured claim JSON record plus fraud detection results. Claim moves to M2.
 
 ### API Endpoint
 ```
 POST /upload-document
 Content-Type: multipart/form-data
 Body: file (PDF or image)
-Response: claim JSON
+Response: { success, claim, fraud_detection, extraction_text_length }
 ```
 
 ---
@@ -374,6 +408,11 @@ The UI is a step-by-step flow. Four screens total.
 - Show loading state while processing
 
 **Screen 2 - Extraction Results Page**
+- Document Integrity Check card at top (fraud detection results):
+  - Low risk: green border, shield icon, "Document Verified - No Tampering Detected"
+  - Medium risk: yellow border, warning icon, findings list with severity badges
+  - High risk: red border, alert icon, detailed findings with risk score
+  - Structured input (no PDF): no fraud card shown
 - Show the extracted claim JSON in a readable card format
 - Not raw JSON - display it as labelled fields
 - Patient info card, hospital info card, billing breakdown, documents checklist
@@ -480,16 +519,27 @@ Claim details:
 ```bash
 # Backend
 cd backend
-pip install fastapi uvicorn python-multipart PyPDF2 pdfplumber
-pip install pytesseract Pillow google-generativeai psycopg2-binary python-dotenv
+pip install -r requirements.txt
+# Or manually:
+# pip install fastapi uvicorn python-multipart PyPDF2 pdfplumber
+# pip install pytesseract Pillow google-genai psycopg2-binary python-dotenv
+# pip install pdf2image cryptography pydantic-settings python-dateutil
 
-# Install Tesseract
+# Install Tesseract (for Tier 3 OCR)
 # Ubuntu/Debian: sudo apt install tesseract-ocr
 # Mac: brew install tesseract
 # Windows: download installer from GitHub
 
-# Create .env file
-GEMINI_API_KEY=your_key_here
+# Install Poppler (required for Tier 4 Vision OCR and fraud detection)
+# Ubuntu/Debian: sudo apt install poppler-utils
+# Mac: brew install poppler
+# Windows: winget install oschwartz10612.Poppler
+# Note: On Windows, the backend auto-detects the winget install location.
+
+# Create .env file (copy from .env.example)
+cp .env.example .env
+# Then edit .env and set:
+GEMINI_API_KEY=your_key_here     # Get from https://aistudio.google.com/apikey
 DATABASE_URL=postgresql://user:password@localhost/claimsense
 SECRET_KEY=your_secret_here
 
@@ -552,11 +602,18 @@ npm run dev
    The encryption service protects: name, dob, phone, email, abha_id, policy_number.
    All encryption goes through `encryption_service.py`. Never store raw PII.
 
+7. Vision functions (`call_llm_vision`, `call_llm_vision_json`) go through the same
+   LLM abstraction layer as text functions. Switching models changes one file.
+
+8. Fraud detection is non-blocking. If Gemini Vision fails or is unavailable,
+   the pipeline continues normally. Fraud results are a sibling field in the API
+   response, not part of the claim schema.
+
 ---
 
 ## WHAT IS OUT OF SCOPE FOR MVP
 
-- M4 Fraud Graph Network (demo with pre-built visual only)
+- M4 Fraud Graph Network (document-level fraud IS implemented; graph network analysis is out of scope)
 - M5 Zero Wait Discharge (explain in presentation, no live code)
 - Real insurer API integration (simulate with mock response)
 - Payment processing

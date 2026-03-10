@@ -6,7 +6,10 @@
       "Bash(cp -r /tmp/as/skills/pdf /tmp/as/skills/webapp-testing /tmp/as/skills/skill-creator .claude/skills/)",
       "Bash(git clone https://github.com/sanjay3290/ai-skills.git /tmp/cs)",
       "Bash(cp -r /tmp/cs/skills/postgres .claude/skills/)",
-      "Bash(rm -rf /tmp/as /tmp/cs)"
+      "Bash(rm -rf /tmp/as /tmp/cs)",
+      "Read(//c/Users/Jabin M/Downloads/**)",
+      "Bash(unzip -l \"C:/Users/Jabin M/Downloads/files.zip\")",
+      "Bash(powershell -Command \"Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::OpenRead\\(''C:\\\\Users\\\\Jabin M\\\\Downloads\\\\files.zip''\\).Entries | Select-Object FullName, Length | Format-Table -AutoSize\")"
     ]
   }
 }

@@ -41,7 +41,7 @@ export default function UploadPage({ onComplete }) {
     setError('');
     try {
       const result = await uploadDocument(file);
-      onComplete(result.claim);
+      onComplete(result.claim, result.fraud_detection);
     } catch (err) {
       setError(err.message);
     } finally {
