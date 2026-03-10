@@ -24,6 +24,25 @@ export async function uploadDocument(file) {
   return res.json();
 }
 
+export async function uploadMultiple(files) {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+
+  const res = await fetch(`${BASE}/upload-multiple`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Multi-file upload failed (${res.status})`);
+  }
+
+  return res.json();
+}
+
 export async function uploadStructured(data) {
   const res = await fetch(`${BASE}/upload-structured`, {
     method: 'POST',

@@ -93,7 +93,6 @@ def _tier1_metadata_gate(file_bytes: bytes) -> Optional[str]:
     file_hash = compute_file_hash(file_bytes)
     if file_hash in _seen_hashes:
         return "Duplicate file detected. This document has already been uploaded."
-    _seen_hashes.add(file_hash)
 
     # Blank/corrupt check
     if is_pdf_blank(file_bytes):
@@ -103,6 +102,7 @@ def _tier1_metadata_gate(file_bytes: bytes) -> Optional[str]:
     if is_pdf_encrypted(file_bytes):
         return "File is password-protected. Please upload an unprotected version."
 
+    _seen_hashes.add(file_hash)
     logger.info("Tier 1 passed â file is valid (hash=%s...)", file_hash[:12])
     return None
 
@@ -410,6 +410,119 @@ def process_pdf_document(
 
 
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Public API: Process Image (Path A - Images)
+# ---------------------------------------------------------------------------
+def process_image_document(
+    file_bytes: bytes,
+    filename: str,
+) -> dict:
+    """
+    Path A (Image) - Process an uploaded image (PNG, JPEG, TIFF) through OCR.
+
+    Unlike PDFs, images skip Tier 1 (no blank/corrupt PDF checks) and
+    Tier 2 (no text layer). Goes straight to OCR or Gemini Vision.
+
+    Steps:
+      1. Duplicate check (hash-based)
+      2. Open image with PIL
+      3. OCR via Tesseract or Gemini Vision
+      4. LLM extraction into ClaimSchema
+      5. Fraud detection via Gemini Vision
+
+    Returns:
+        Dict with keys: success, claim, error, extraction_text_length, fraud_detection
+    """
+    from PIL import Image
+    from io import BytesIO
+
+    logger.info("=" * 50)
+    logger.info("M1 DocTriage (IMAGE) starting | file=%s | size=%d bytes", filename, len(file_bytes))
+
+    # --- Duplicate check ---
+    file_hash = compute_file_hash(file_bytes)
+    if file_hash in _seen_hashes:
+        return {"success": False, "error": "Duplicate file detected. This document has already been uploaded."}
+
+    # --- Open image ---
+    try:
+        img = Image.open(BytesIO(file_bytes))
+        img.load()  # Force load to catch corrupted images
+        logger.info("Image opened | format=%s | size=%sx%s", img.format, img.width, img.height)
+    except Exception as e:
+        logger.error("Failed to open image: %s", str(e))
+        return {"success": False, "error": f"Cannot open image file: {str(e)}"}
+
+    images = [img]
+
+    # --- OCR: Try Tesseract first, fall back to Gemini Vision ---
+    document_text = ""
+
+    if ocr_available():
+        page_text, confidence = ocr_image(img)
+        if confidence >= 0.85 and page_text.strip():
+            document_text = page_text
+            logger.info("Tesseract OCR resolved for image (confidence=%.2f, %d chars)", confidence, len(page_text))
+
+    if not document_text.strip():
+        logger.info("Tesseract insufficient -- trying Gemini Vision OCR on image")
+        try:
+            vision_text, vision_conf = gemini_vision_ocr(images)
+            if vision_text:
+                document_text = vision_text
+                logger.info("Gemini Vision OCR resolved (%d chars)", len(vision_text))
+        except Exception as e:
+            logger.error("Gemini Vision OCR failed: %s", str(e))
+
+    if not document_text.strip():
+        return {
+            "success": False,
+            "error": "Could not extract any text from this image. Please ensure it is clear and try again, or use the structured input form.",
+        }
+
+    # --- Mark as seen (after successful text extraction) ---
+    _seen_hashes.add(file_hash)
+
+    # --- LLM Extraction ---
+    try:
+        extracted = _extract_claim_with_llm(document_text)
+    except Exception as e:
+        logger.error("LLM extraction failed: %s", str(e))
+        return {"success": False, "error": f"AI extraction failed: {str(e)}"}
+
+    # --- Build ClaimSchema ---
+    claim = ClaimSchema(
+        claim_id=_generate_claim_id(),
+        input_type="Image",
+        meta={"status": "Extracted", "submitted_at": None},
+    )
+
+    for section in ["patient", "hospital", "admission", "medical", "billing", "documents", "insurance"]:
+        if section in extracted and isinstance(extracted[section], dict):
+            section_model = getattr(claim, section)
+            for key, value in extracted[section].items():
+                if hasattr(section_model, key) and value is not None:
+                    try:
+                        setattr(section_model, key, value)
+                    except (ValueError, TypeError) as e:
+                        logger.debug("Skipping field %s.%s: %s", section, key, e)
+
+    # --- Fraud Detection ---
+    fraud_result = _run_fraud_detection(images)
+
+    logger.info("M1 DocTriage (IMAGE) complete | claim_id=%s", claim.claim_id)
+    logger.info("=" * 50)
+
+    return {
+        "success": True,
+        "claim": claim.model_dump(),
+        "extraction_text_length": len(document_text),
+        "fraud_detection": fraud_result,
+    }
+
+
 # Public API: Process Structured Input (Path B)
 # ---------------------------------------------------------------------------
 def process_structured_input(data: dict) -> dict:

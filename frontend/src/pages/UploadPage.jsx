@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
-import { uploadDocument, uploadStructured } from '../api.js'
+import { uploadDocument, uploadMultiple, uploadStructured } from '../api.js'
 
 export default function UploadPage({ onComplete }) {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,20 +27,31 @@ export default function UploadPage({ onComplete }) {
   function handleDrop(e) {
     e.preventDefault();
     setDragOver(false);
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) setFile(droppedFile);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) setFiles(prev => [...prev, ...droppedFiles]);
   }
 
   function handleFileSelect(e) {
-    if (e.target.files[0]) setFile(e.target.files[0]);
+    const selected = Array.from(e.target.files);
+    if (selected.length > 0) setFiles(prev => [...prev, ...selected]);
+    e.target.value = ''; // reset so same files can be selected again
   }
 
-  async function handleUploadPDF() {
-    if (!file) return;
+  function removeFile(index) {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleUploadFiles() {
+    if (files.length === 0) return;
     setLoading(true);
     setError('');
     try {
-      const result = await uploadDocument(file);
+      let result;
+      if (files.length === 1) {
+        result = await uploadDocument(files[0]);
+      } else {
+        result = await uploadMultiple(files);
+      }
       onComplete(result.claim, result.fraud_detection);
     } catch (err) {
       setError(err.message);
@@ -142,7 +153,7 @@ export default function UploadPage({ onComplete }) {
       </div>
 
       {mode === 'pdf' ? (
-        /* PDF Upload Mode */
+        /* File Upload Mode */
         <div>
           <div
             className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
@@ -152,43 +163,51 @@ export default function UploadPage({ onComplete }) {
             onDragLeave={() => setDragOver(false)}
           >
             <div className="upload-icon">📁</div>
-            <h3>Drag & drop your document here</h3>
-            <p>or click to browse — PDF, PNG, JPEG, TIFF supported</p>
+            <h3>Drag & drop your documents here</h3>
+            <p>or click to browse — PDF, PNG, JPEG, TIFF supported • <strong>Multiple files OK</strong></p>
             <input
               ref={fileInput}
               type="file"
               accept=".pdf,.png,.jpg,.jpeg,.tiff"
+              multiple
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
           </div>
 
-          {file && (
-            <div className="file-info">
-              <span>📎</span>
-              <div>
-                <strong>{file.name}</strong>
-                <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
-                  {(file.size / 1024).toFixed(1)} KB • {file.type || 'unknown type'}
-                </div>
+          {files.length > 0 && (
+            <div style={{ marginTop: 'var(--space-md)' }}>
+              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                📎 {files.length} file{files.length > 1 ? 's' : ''} selected
               </div>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setFile(null)}
-                style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: 'var(--font-size-xs)' }}
-              >
-                ✕ Remove
-              </button>
+              {files.map((f, i) => (
+                <div key={i} className="file-info" style={{ marginBottom: '6px' }}>
+                  <span>{f.type?.includes('pdf') ? '📄' : '🖼️'}</span>
+                  <div style={{ flex: 1 }}>
+                    <strong>{f.name}</strong>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
+                      {(f.size / 1024).toFixed(1)} KB • {f.type || 'unknown type'}
+                    </div>
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => removeFile(i)}
+                    style={{ padding: '4px 10px', fontSize: 'var(--font-size-xs)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
           <div className="action-bar">
             <button
               className="btn btn-primary"
-              onClick={handleUploadPDF}
-              disabled={!file}
+              onClick={handleUploadFiles}
+              disabled={files.length === 0}
             >
-              🚀 Process Document
+              🚀 Process {files.length > 1 ? `${files.length} Documents` : 'Document'}
             </button>
           </div>
         </div>

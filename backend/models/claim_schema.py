@@ -13,8 +13,9 @@ Built for the Indian market:
 - ICD-10 codes following Indian coding conventions
 """
 
+import re
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ---------------------------------------------------------------------------

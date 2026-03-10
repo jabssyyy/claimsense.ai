@@ -144,6 +144,9 @@ _try_include_router("routes.validate", "/api", "M2 - Policy Engine")
 # M3 - Clean Claim Guarantee (submission)
 _try_include_router("routes.submit", "/api", "M3 - Clean Claim")
 
+# Claims History (dashboard)
+_try_include_router("routes.claims", "/api", "Claims History")
+
 
 # ---------------------------------------------------------------------------
 # Run with: python main.py
