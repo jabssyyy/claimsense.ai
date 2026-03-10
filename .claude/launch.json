@@ -12,7 +12,8 @@
         "--port",
         "8000"
       ],
-      "port": 8000
+      "port": 8000,
+      "cwd": "backend"
     },
     {
       "name": "frontend",
