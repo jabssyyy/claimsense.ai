@@ -11,9 +11,11 @@ export default function App() {
   const [claimData, setClaimData] = useState(null);
   const [validationData, setValidationData] = useState(null);
   const [submissionData, setSubmissionData] = useState(null);
+  const [fraudData, setFraudData] = useState(null);
 
-  function goToExtraction(data) {
+  function goToExtraction(data, fraud) {
     setClaimData(data);
+    setFraudData(fraud || null);
     setStep(1);
   }
 
@@ -32,6 +34,7 @@ export default function App() {
     setClaimData(null);
     setValidationData(null);
     setSubmissionData(null);
+    setFraudData(null);
   }
 
   return (
@@ -68,7 +71,7 @@ export default function App() {
 
         {/* Pages */}
         {step === 0 && <UploadPage onComplete={goToExtraction} />}
-        {step === 1 && <ExtractionPage claim={claimData} onComplete={goToValidation} onBack={() => setStep(0)} />}
+        {step === 1 && <ExtractionPage claim={claimData} fraudDetection={fraudData} onComplete={goToValidation} onBack={() => setStep(0)} />}
         {step === 2 && <ValidationPage claim={claimData} validationData={validationData} onComplete={goToSubmission} onBack={() => setStep(1)} />}
         {step === 3 && <SubmissionPage submissionData={submissionData} onRestart={restart} />}
       </main>

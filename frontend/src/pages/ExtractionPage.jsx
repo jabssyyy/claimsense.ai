@@ -1,8 +1,24 @@
-export default function ExtractionPage({ claim, onComplete, onBack }) {
+export default function ExtractionPage({ claim, fraudDetection, onComplete, onBack }) {
   if (!claim) return null;
 
   const fmt = (v) => v ?? '—';
   const fmtMoney = (v) => v ? `₹${Number(v).toLocaleString('en-IN')}` : '₹0';
+
+  // Fraud detection helpers
+  const riskColors = {
+    low: { border: 'var(--success)', bg: 'var(--success-bg)', badge: 'badge-pass' },
+    medium: { border: 'var(--warning)', bg: 'var(--warning-bg)', badge: 'badge-warning' },
+    high: { border: 'var(--danger)', bg: 'var(--danger-bg)', badge: 'badge-fail' },
+    unknown: { border: 'var(--text-muted)', bg: 'var(--bg-glass)', badge: 'badge-warning' },
+  };
+
+  const severityBadge = (severity) => {
+    const map = { low: 'badge-pass', medium: 'badge-warning', high: 'badge-fail' };
+    return map[severity] || 'badge-warning';
+  };
+
+  const riskLevel = fraudDetection?.risk_level || 'unknown';
+  const riskStyle = riskColors[riskLevel] || riskColors.unknown;
 
   return (
     <div>
@@ -11,6 +27,72 @@ export default function ExtractionPage({ claim, onComplete, onBack }) {
         <p>Review the information below before proceeding to policy validation</p>
       </div>
 
+      {/* ── Fraud Detection Alert ── */}
+      {fraudDetection && (
+        <div style={{
+          border: `1px solid ${riskStyle.border}`,
+          background: riskStyle.bg,
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-xl)',
+          marginBottom: 'var(--space-xl)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-md)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+              <span style={{ fontSize: '1.5rem' }}>
+                {riskLevel === 'low' ? '🛡️' : riskLevel === 'high' ? '🚨' : '⚠️'}
+              </span>
+              <span style={{ fontWeight: 700, fontSize: 'var(--font-size-lg)' }}>
+                Document Integrity Check
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+              <span className={`badge ${riskStyle.badge}`}>
+                {riskLevel.toUpperCase()} RISK
+              </span>
+              <span style={{
+                fontFamily: 'monospace',
+                fontSize: 'var(--font-size-sm)',
+                color: 'var(--text-secondary)',
+              }}>
+                Score: {((fraudDetection.risk_score || 0) * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Summary */}
+          {fraudDetection.summary && (
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-md)' }}>
+              {fraudDetection.summary}
+            </p>
+          )}
+
+          {/* Findings list */}
+          {fraudDetection.findings && fraudDetection.findings.length > 0 && (
+            <div className="validation-list">
+              {fraudDetection.findings.map((finding, i) => (
+                <div key={i} className="validation-item">
+                  <span className={`badge ${severityBadge(finding.severity)}`}>
+                    {(finding.severity || 'info').toUpperCase()}
+                  </span>
+                  <span className="rule-name" style={{ textTransform: 'none' }}>
+                    {(finding.type || 'finding').replace(/_/g, ' ')}
+                  </span>
+                  <span className="rule-reason">{finding.description}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Low risk — clean message */}
+          {riskLevel === 'low' && (!fraudDetection.findings || fraudDetection.findings.length === 0) && (
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--success)', fontWeight: 600 }}>
+              ✅ Document Verified — No Tampering Detected
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Extracted Claim Cards ── */}
       <div className="card-grid">
         {/* Patient Info */}
         <div className="card">

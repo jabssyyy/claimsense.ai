@@ -2,14 +2,12 @@
 ClaimSense.ai - OCR Service
 
 Thin wrapper around pytesseract for Tesseract OCR (Tier 3)
-and a placeholder for Cloud OCR (Tier 4 - Google Cloud Vision).
-
-Tier 3: Local Tesseract OCR - free, handles most scanned documents.
-Tier 4: Cloud OCR - placeholder for handwriting, low-quality scans, regional languages.
+and Gemini Vision OCR (Tier 4) for handwriting, low-quality scans.
 """
 
+import io
 import logging
-from typing import Optional, Tuple
+from typing import Tuple
 
 from PIL import Image
 
@@ -17,12 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def ocr_available() -> bool:
-    """
-    Check if Tesseract OCR is installed and accessible.
-
-    Returns True if Tesseract can be reached, False otherwise.
-    Called during startup to log OCR capability status.
-    """
+    """Check if Tesseract OCR is installed and accessible."""
     try:
         import pytesseract
         version = pytesseract.get_tesseract_version()
@@ -31,10 +24,7 @@ def ocr_available() -> bool:
     except Exception as e:
         logger.warning(
             "Tesseract OCR not available: %s. "
-            "Tier 3 OCR will be skipped. Install Tesseract to enable OCR: "
-            "Windows: download from https://github.com/UB-Mannheim/tesseract/wiki | "
-            "Ubuntu: sudo apt install tesseract-ocr | "
-            "Mac: brew install tesseract",
+            "Tier 3 OCR will be skipped. Install Tesseract to enable OCR.",
             str(e),
         )
         return False
@@ -44,43 +34,29 @@ def ocr_image(image: Image.Image) -> Tuple[str, float]:
     """
     Run Tesseract OCR on a PIL Image.
 
-    Args:
-        image: PIL Image to OCR.
-
     Returns:
-        Tuple of (extracted_text, confidence_score).
-        Confidence is 0.0-1.0 where 1.0 is perfect.
+        Tuple of (extracted_text, confidence_score 0.0-1.0).
     """
     import pytesseract
     import pandas as pd
 
     try:
-        # Get detailed OCR data including confidence scores
         data = pytesseract.image_to_data(
             image,
             output_type=pytesseract.Output.DATAFRAME,
             lang="eng",
         )
-
-        # Filter out non-text entries (conf == -1)
         text_data = data[data["conf"] != -1]
 
         if text_data.empty:
             logger.warning("OCR produced no text from image")
             return ("", 0.0)
 
-        # Calculate mean confidence (Tesseract gives 0-100, normalize to 0-1)
         mean_confidence = text_data["conf"].mean() / 100.0
-
-        # Join all recognized text
         words = text_data["text"].dropna().astype(str).tolist()
         text = " ".join(w for w in words if w.strip())
 
-        logger.info(
-            "OCR completed | words=%d | confidence=%.2f",
-            len(words),
-            mean_confidence,
-        )
+        logger.info("OCR completed | words=%d | confidence=%.2f", len(words), mean_confidence)
         return (text, mean_confidence)
 
     except Exception as e:
@@ -89,10 +65,7 @@ def ocr_image(image: Image.Image) -> Tuple[str, float]:
 
 
 def ocr_image_simple(image: Image.Image) -> str:
-    """
-    Simple OCR - returns just the text without confidence score.
-    Fallback when detailed data is not needed.
-    """
+    """Simple OCR - returns just the text without confidence score."""
     import pytesseract
 
     try:
@@ -103,21 +76,62 @@ def ocr_image_simple(image: Image.Image) -> str:
         return ""
 
 
+def gemini_vision_ocr(images: list) -> Tuple[str, float]:
+    """
+    Tier 4 - Gemini Vision OCR.
+
+    Sends page images to Gemini Vision to extract text.
+    Handles handwritten documents, low quality scans, and regional languages.
+
+    Args:
+        images: List of PIL Images (one per PDF page).
+
+    Returns:
+        Tuple of (extracted_text, confidence_score).
+    """
+    from services.llm_service import call_llm_vision
+
+    if not images:
+        return ("", 0.0)
+
+    logger.info("Gemini Vision OCR starting | pages=%d", len(images))
+
+    try:
+        image_bytes_list = []
+        for img in images:
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            image_bytes_list.append(buf.getvalue())
+
+        prompt = (
+            "Extract ALL text from this document image. This may contain "
+            "handwritten text, low quality scans, or text in regional Indian "
+            "languages (Hindi, Tamil, Telugu, Kannada, etc.). "
+            "Return ONLY the extracted text, preserving the original layout "
+            "as closely as possible. If text is unclear, provide your best "
+            "interpretation with [unclear] markers."
+        )
+
+        result = call_llm_vision(
+            prompt=prompt,
+            images=image_bytes_list,
+            system="You are a document OCR specialist. Extract text accurately.",
+        )
+
+        if result and result.strip():
+            logger.info("Gemini Vision OCR succeeded | chars=%d", len(result))
+            return (result.strip(), 0.92)
+
+        logger.warning("Gemini Vision OCR returned empty result")
+        return ("", 0.0)
+
+    except Exception as e:
+        logger.error("Gemini Vision OCR failed: %s", str(e))
+        return ("", 0.0)
+
+
+# Backward-compatible alias
 def cloud_ocr_placeholder(file_bytes: bytes) -> Tuple[str, float]:
-    """
-    Tier 4 - Cloud OCR placeholder.
-
-    This would call Google Cloud Vision or AWS Textract for:
-    - Handwritten documents
-    - Low quality scans (confidence < 85% from Tesseract)
-    - Regional language text (Hindi, Tamil, etc.)
-
-    For MVP: returns empty result with a log message.
-    Integration point for production: replace this function body.
-    """
-    logger.warning(
-        "Cloud OCR (Tier 4) not yet integrated. "
-        "Document requires cloud-based OCR processing. "
-        "For production, integrate Google Cloud Vision or AWS Textract here."
-    )
+    """Legacy alias. Use gemini_vision_ocr() instead."""
+    logger.warning("cloud_ocr_placeholder called - use gemini_vision_ocr() instead")
     return ("", 0.0)
