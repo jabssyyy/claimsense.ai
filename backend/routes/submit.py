@@ -9,11 +9,14 @@ POST /submit-claim — Full M3 pipeline (code check, doc check, package assembly
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from models.claim_schema import ClaimSchema
 from modules.m3_clean_claim import process_submission
+from database import get_db
+from models.db_models import ClaimRecord
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,7 @@ class SubmitClaimResponse(BaseModel):
     status: str                             # "Ready for Submission" or "Hold - Action Required"
     claim_reference: Optional[str]          # Generated on success
     fhir_payload: Optional[dict]
+    db_id: Optional[int] = None             # ID from the PostgreSQL database
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +54,7 @@ class SubmitClaimResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 @router.post("/submit-claim", response_model=SubmitClaimResponse)
-async def submit_claim(request: SubmitClaimRequest):
+async def submit_claim(request: SubmitClaimRequest, db: Session = Depends(get_db)):
     """
     Final quality check and submission package assembly (M3).
 
@@ -89,5 +93,26 @@ async def submit_claim(request: SubmitClaimRequest):
             status_code=500,
             detail=f"Submission processing failed: {str(e)}",
         )
+
+    # Persist the processed claim to PostgreSQL
+    try:
+        db_record = ClaimRecord(
+            claim_id=claim.claim_id,
+            status=result.get("status", "Unknown"),
+            patient_name=claim.patient.name if getattr(claim, 'patient', None) else None,
+            hospital_name=claim.hospital.name if getattr(claim, 'hospital', None) else None,
+            total_bill=claim.billing.total_bill if getattr(claim, 'billing', None) else None,
+            raw_data=result
+        )
+        db.add(db_record)
+        db.commit()
+        db.refresh(db_record)
+        result["db_id"] = db_record.id
+        logger.info(f"Persisted claim {claim.claim_id} to DB with ID: {db_record.id}")
+    except Exception as e:
+        logger.error(f"Failed to persist claim to DB: {str(e)}")
+        # We don't fail the API request if the database save fails for MVP,
+        # but in production you'd want a rollback or retry queue.
+        db.rollback()
 
     return SubmitClaimResponse(**result)
