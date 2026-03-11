@@ -52,6 +52,20 @@ class AdmissionInfo(BaseModel):
     room_type: Optional[str] = None          # Single, Shared, Suite
     length_of_stay: int = 0
 
+    @field_validator("length_of_stay", mode="before")
+    @classmethod
+    def parse_length_of_stay(cls, v):
+        if isinstance(v, int):
+            return v
+        if isinstance(v, str):
+            # Extract leading digits from strings like "4 Days", "3 days", "4"
+            m = re.match(r"(\d+)", v.strip())
+            return int(m.group(1)) if m else 0
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 0
+
 
 class MedicalInfo(BaseModel):
     """Diagnosis and procedure information."""
