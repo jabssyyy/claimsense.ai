@@ -1,5 +1,5 @@
 /**
- * ClaimSense.ai — API Service
+ * ClaimSense — API Service
  * 
  * All API calls to the FastAPI backend go through this module.
  * Base URL is proxied by Vite (in dev) from /api → http://localhost:8000/api.
@@ -88,6 +88,19 @@ export async function submitClaim(validatedClaimJson, validationResults, coverag
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Submission failed (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function submitToInsurer(dbId) {
+  const res = await fetch(`${BASE}/claims/${dbId}/submit-to-insurer`, {
+    method: 'PATCH',
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Submit to insurer failed (${res.status})`);
   }
 
   return res.json();

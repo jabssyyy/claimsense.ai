@@ -1,5 +1,5 @@
 """
-ClaimSense.ai - Submit Routes (M3 Clean Claim Guarantee)
+ClaimSense - Submit Routes (M3 Clean Claim Guarantee)
 
 API endpoints for final claim quality check and submission.
 
@@ -116,3 +116,32 @@ async def submit_claim(request: SubmitClaimRequest, db: Session = Depends(get_db
         db.rollback()
 
     return SubmitClaimResponse(**result)
+
+
+# ---------------------------------------------------------------------------
+# PATCH /claims/{id}/submit-to-insurer — Mark claim as Submitted
+# ---------------------------------------------------------------------------
+
+@router.patch("/claims/{claim_db_id}/submit-to-insurer")
+async def submit_to_insurer(claim_db_id: int, db: Session = Depends(get_db)):
+    """
+    Mark a claim as submitted to the insurer.
+    Updates the status to 'Submitted' in the database.
+    """
+    record = db.query(ClaimRecord).filter(ClaimRecord.id == claim_db_id).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    record.status = "Submitted"
+    db.commit()
+    db.refresh(record)
+
+    logger.info(f"Claim {record.claim_id} marked as Submitted (DB ID: {record.id})")
+
+    return {
+        "success": True,
+        "message": f"Claim {record.claim_id} has been successfully submitted to the insurer.",
+        "claim_id": record.claim_id,
+        "status": "Submitted",
+    }

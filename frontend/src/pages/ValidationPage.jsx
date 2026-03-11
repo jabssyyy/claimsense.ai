@@ -70,8 +70,8 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
     return (
       <div className="page-header">
         <h1>Policy Validation</h1>
-        {error && <div className="error-banner">⚠️ {error}</div>}
-        <button className="btn btn-primary" onClick={runValidation}>🔄 Retry Validation</button>
+        {error && <div className="error-banner">{error}</div>}
+        <button className="btn btn-primary" onClick={runValidation}>Retry Validation</button>
       </div>
     );
   }
@@ -100,7 +100,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
         </p>
       </div>
 
-      {error && <div className="error-banner">⚠️ {error}</div>}
+      {error && <div className="error-banner">{error}</div>}
 
       {/* Summary Stats */}
       <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center', marginBottom: 'var(--space-xl)', flexWrap: 'wrap' }}>
@@ -119,7 +119,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
 
       {/* Validation Rules */}
       <div className="card" style={{ marginBottom: 'var(--space-lg)' }}>
-        <div className="card-title">📋 Rule-by-Rule Results</div>
+        <div className="card-title">Rule-by-Rule Results</div>
         <div className="validation-list">
           {results.validation_results?.map((r, i) => (
             <div key={i} className="validation-item">
@@ -144,7 +144,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
             <span style={{ fontWeight: 700, fontSize: 'var(--font-size-lg)' }}>
-              ⚠️ Fix Issues & Revalidate
+              Fix Issues & Revalidate
             </span>
             <button
               className="btn btn-secondary"
@@ -163,7 +163,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
               <div className="card-grid" style={{ gap: '12px' }}>
                 {/* Patient */}
                 <div className="card" style={{ padding: '16px' }}>
-                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>👤 Patient</div>
+                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>Patient</div>
                   <EditRow label="Name" value={editableClaim.patient?.name} onChange={v => updateField('patient', 'name', v)} />
                   <EditRow label="DOB" value={editableClaim.patient?.dob} onChange={v => updateField('patient', 'dob', v)} />
                   <EditRow label="Gender" value={editableClaim.patient?.gender} onChange={v => updateField('patient', 'gender', v)} />
@@ -173,7 +173,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
 
                 {/* Medical */}
                 <div className="card" style={{ padding: '16px' }}>
-                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>🩺 Medical</div>
+                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>Medical</div>
                   <EditRow label="Diagnosis" value={editableClaim.medical?.primary_diagnosis} onChange={v => updateField('medical', 'primary_diagnosis', v)} />
                   <EditRow label="ICD-10" value={editableClaim.medical?.icd10_code} onChange={v => updateField('medical', 'icd10_code', v)} />
                   <EditRow label="Procedure" value={editableClaim.medical?.procedure} onChange={v => updateField('medical', 'procedure', v)} />
@@ -182,7 +182,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
 
                 {/* Admission */}
                 <div className="card" style={{ padding: '16px' }}>
-                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>🛏️ Admission</div>
+                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>Admission</div>
                   <EditRow label="Admission Date" value={editableClaim.admission?.admission_date} onChange={v => updateField('admission', 'admission_date', v)} />
                   <EditRow label="Discharge Date" value={editableClaim.admission?.discharge_date} onChange={v => updateField('admission', 'discharge_date', v)} />
                   <EditRow label="Stay (days)" value={editableClaim.admission?.length_of_stay} onChange={v => updateField('admission', 'length_of_stay', parseInt(v) || 0)} type="number" />
@@ -191,7 +191,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
 
                 {/* Billing */}
                 <div className="card" style={{ padding: '16px' }}>
-                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>💰 Billing (₹)</div>
+                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>Billing (INR)</div>
                   <EditRow label="Room Charges" value={editableClaim.billing?.room_charges} onChange={v => updateField('billing', 'room_charges', parseFloat(v) || 0)} type="number" />
                   <EditRow label="ICU Charges" value={editableClaim.billing?.icu_charges} onChange={v => updateField('billing', 'icu_charges', parseFloat(v) || 0)} type="number" />
                   <EditRow label="Doctor Fees" value={editableClaim.billing?.doctor_fees} onChange={v => updateField('billing', 'doctor_fees', parseFloat(v) || 0)} type="number" />
@@ -200,7 +200,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
 
                 {/* Documents toggles */}
                 <div className="card" style={{ padding: '16px' }}>
-                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>📄 Documents</div>
+                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>Documents</div>
                   <ToggleRow label="Hospital Bill" value={editableClaim.documents?.hospital_bill} onToggle={() => updateField('documents', 'hospital_bill', !editableClaim.documents?.hospital_bill)} />
                   <ToggleRow label="Discharge Summary" value={editableClaim.documents?.discharge_summary} onToggle={() => updateField('documents', 'discharge_summary', !editableClaim.documents?.discharge_summary)} />
                   <ToggleRow label="Prescription" value={editableClaim.documents?.prescription} onToggle={() => updateField('documents', 'prescription', !editableClaim.documents?.prescription)} />
@@ -211,7 +211,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
 
                 {/* Insurance */}
                 <div className="card" style={{ padding: '16px' }}>
-                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>🛡️ Insurance</div>
+                  <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>Insurance</div>
                   <EditRow label="Insurer" value={editableClaim.insurance?.insurer_name} onChange={v => updateField('insurance', 'insurer_name', v)} />
                   <EditRow label="Pre-Auth #" value={editableClaim.insurance?.pre_auth_number} onChange={v => updateField('insurance', 'pre_auth_number', v)} />
                 </div>
@@ -220,7 +220,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
               <div style={{ textAlign: 'center', marginTop: 'var(--space-lg)' }}>
                 <button className="btn btn-primary" onClick={handleRevalidate}
                   style={{ padding: '12px 32px', fontSize: '1rem' }}>
-                  🔄 Revalidate with Updated Fields
+                  Revalidate with Updated Fields
                 </button>
               </div>
             </div>
@@ -259,7 +259,7 @@ export default function ValidationPage({ claim, validationData, onComplete, onBa
       {/* Coverage Summary */}
       {results.coverage_summary && (
         <div className="card">
-          <div className="card-title">📝 Coverage Summary</div>
+          <div className="card-title">Coverage Summary</div>
           <div className="summary-box">
             {results.coverage_summary.split('\n').map((line, i) => (
               <p key={i}>{line}</p>
@@ -313,7 +313,7 @@ function ToggleRow({ label, value, onToggle }) {
       }}
     >
       <span>{label}</span>
-      <span>{value ? '✅' : '❌'}</span>
+      <span>{value ? '✓' : '✗'}</span>
     </div>
   );
 }

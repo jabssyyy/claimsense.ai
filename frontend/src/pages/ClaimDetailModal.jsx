@@ -97,7 +97,7 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
                     }}
                   >
                     <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{label}</span>
-                    <span>{val ? '✅' : '❌'}</span>
+                    <span>{val ? '✓ Yes' : '✗ No'}</span>
                   </div>
                 );
               }
@@ -126,7 +126,7 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
               }}>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{label}</div>
                 <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500 }}>
-                  {typeof val === 'boolean' ? (val ? '✅ Yes' : '❌ No') : String(val)}
+                  {typeof val === 'boolean' ? (val ? '✓ Yes' : '✗ No') : String(val)}
                 </div>
               </div>
             );
@@ -165,10 +165,10 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
         {/* Tab Bar */}
         <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
           {[
-            ['details', '📋 Details'],
-            ['edit', '✏️ Edit'],
-            ['validate', '✅ Validate'],
-            ['submit', '📤 Submit'],
+            ['details', 'Details'],
+            ['edit', 'Edit'],
+            ['validate', 'Validate'],
+            ['submit', 'Submit'],
           ].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} style={{
               padding: '6px 16px', fontSize: 'var(--font-size-sm)', fontWeight: 600,
@@ -182,7 +182,7 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
 
         {loading && <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</p>}
 
-        {error && <div className="error-banner" style={{ marginBottom: '12px' }}>⚠️ {error}</div>}
+        {error && <div className="error-banner" style={{ marginBottom: '12px' }}>{error}</div>}
 
         {!loading && claim && (tab === 'details' || tab === 'edit') && (
           <>
@@ -199,31 +199,31 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
               </span>}
             </div>
 
-            {renderSection('Patient', '👤', 'patient', [
+            {renderSection('Patient', '', 'patient', [
               ['name', 'Name'], ['dob', 'DOB'], ['gender', 'Gender'], ['abha_id', 'ABHA ID'],
               ['phone', 'Phone'], ['policy_number', 'Policy No.'],
             ])}
-            {renderSection('Hospital', '🏥', 'hospital', [
+            {renderSection('Hospital', '', 'hospital', [
               ['name', 'Hospital'], ['doctor_name', 'Doctor'], ['department', 'Department'], ['tpa_name', 'TPA'],
             ])}
-            {renderSection('Admission', '🛏️', 'admission', [
+            {renderSection('Admission', '', 'admission', [
               ['admission_date', 'Admission'], ['discharge_date', 'Discharge'], ['admission_type', 'Type'],
               ['ward_type', 'Ward'], ['room_type', 'Room'], ['length_of_stay', 'Stay (days)', 'number'],
             ])}
-            {renderSection('Medical', '🩺', 'medical', [
+            {renderSection('Medical', '', 'medical', [
               ['primary_diagnosis', 'Diagnosis'], ['icd10_code', 'ICD-10'], ['procedure', 'Procedure'], ['procedure_code', 'Proc. Code'],
             ])}
-            {renderSection('Billing', '💰', 'billing', [
+            {renderSection('Billing', '', 'billing', [
               ['room_charges', 'Room', 'number'], ['icu_charges', 'ICU', 'number'], ['doctor_fees', 'Doctor', 'number'],
               ['ot_charges', 'OT', 'number'], ['medicines', 'Medicines', 'number'], ['lab_charges', 'Lab', 'number'],
               ['total_bill', 'Total', 'number'],
             ])}
-            {renderSection('Documents', '📄', 'documents', [
+            {renderSection('Documents', '', 'documents', [
               ['hospital_bill', 'Hospital Bill', 'bool'], ['discharge_summary', 'Discharge Summary', 'bool'],
               ['prescription', 'Prescription', 'bool'], ['lab_reports', 'Lab Reports', 'bool'],
               ['pre_auth_letter', 'Pre-Auth Letter', 'bool'], ['id_proof', 'ID Proof', 'bool'],
             ])}
-            {renderSection('Insurance', '🛡️', 'insurance', [
+            {renderSection('Insurance', '', 'insurance', [
               ['insurer_name', 'Insurer'], ['pre_auth_number', 'Pre-Auth #'],
             ])}
 
@@ -231,7 +231,7 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
               <div style={{ textAlign: 'center', marginTop: '16px' }}>
                 <button className="btn btn-primary" onClick={handleValidate} disabled={validating}
                   style={{ padding: '10px 28px' }}>
-                  {validating ? '⏳ Validating...' : '✅ Run Validation'}
+                  {validating ? 'Validating...' : 'Run Validation'}
                 </button>
               </div>
             )}
@@ -261,7 +261,7 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
 
             {validationResults.coverage_summary && (
               <div className="card" style={{ padding: '14px', marginBottom: '16px' }}>
-                <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>📝 Coverage Summary</div>
+                <div className="card-title" style={{ fontSize: 'var(--font-size-sm)' }}>Coverage Summary</div>
                 <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
                   {validationResults.coverage_summary}
                 </div>
@@ -273,7 +273,7 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
                 ← Back to Edit
               </button>
               <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? '⏳ Submitting...' : '📤 Submit Claim'}
+                {submitting ? 'Submitting...' : 'Submit Claim'}
               </button>
             </div>
           </div>
@@ -288,7 +288,7 @@ export default function ClaimDetailModal({ claimId, onClose, onLoadIntoWizard })
         {/* Submit Result Tab */}
         {!loading && tab === 'submit' && submitResult && (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>✅</div>
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>—</div>
             <h3 style={{ marginBottom: '8px' }}>Claim Submitted Successfully</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
               Reference: <strong style={{ color: 'var(--accent)' }}>{submitResult.claim_reference || submitResult.submission_package?.claim_reference}</strong>

@@ -23,13 +23,13 @@ export default function DashboardPage({ onRaiseClaim, onViewClaim }) {
 
   function getStatusBadge(status) {
     const colors = {
-      'Extracted': { bg: 'var(--info-bg)', color: 'var(--info)', icon: '📋' },
-      'Validated': { bg: 'var(--success-bg)', color: 'var(--success)', icon: '✅' },
-      'Ready for Submission': { bg: 'var(--success-bg)', color: 'var(--success)', icon: '🚀' },
-      'Hold - Action Required': { bg: 'var(--warning-bg)', color: 'var(--warning)', icon: '⚠️' },
-      'Submitted': { bg: 'var(--accent-lighter)', color: 'var(--accent)', icon: '📤' },
+      'Extracted': { bg: 'var(--info-bg)', color: 'var(--info)' },
+      'Validated': { bg: 'var(--success-bg)', color: 'var(--success)' },
+      'Ready for Submission': { bg: 'var(--success-bg)', color: 'var(--success)' },
+      'Hold - Action Required': { bg: 'var(--warning-bg)', color: 'var(--warning)' },
+      'Submitted': { bg: 'var(--accent-lighter)', color: 'var(--accent)' },
     };
-    const s = colors[status] || { bg: 'var(--bg-glass-strong)', color: 'var(--text-muted)', icon: '📄' };
+    const s = colors[status] || { bg: 'var(--bg-glass-strong)', color: 'var(--text-muted)' };
     return (
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -37,7 +37,7 @@ export default function DashboardPage({ onRaiseClaim, onViewClaim }) {
         fontSize: 'var(--font-size-xs)', fontWeight: 600,
         background: s.bg, color: s.color,
       }}>
-        {s.icon} {status}
+        {status}
       </span>
     );
   }
@@ -77,7 +77,7 @@ export default function DashboardPage({ onRaiseClaim, onViewClaim }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>Recent Claims</h2>
           <button onClick={fetchClaims} className="btn btn-secondary" style={{ padding: '5px 12px', fontSize: 'var(--font-size-xs)' }}>
-            ↻ Refresh
+            Refresh
           </button>
         </div>
 
@@ -86,7 +86,7 @@ export default function DashboardPage({ onRaiseClaim, onViewClaim }) {
 
         {!loading && !error && claims.length === 0 && (
           <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '10px', opacity: 0.5 }}>📭</div>
+            <div style={{ fontSize: '2.5rem', marginBottom: '10px', opacity: 0.5 }}>—</div>
             <p style={{ fontSize: 'var(--font-size-base)' }}>No claims yet</p>
             <p style={{ fontSize: 'var(--font-size-sm)' }}>Click "New Claim" to get started</p>
           </div>

@@ -132,7 +132,7 @@ export default function UploadPage({ onComplete }) {
         <p>Upload a PDF bill or enter claim details manually</p>
       </div>
 
-      {error && <div className="error-banner">⚠️ {error}</div>}
+      {error && <div className="error-banner">{error}</div>}
 
       {/* Mode Toggle */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-xl)' }}>
@@ -141,14 +141,14 @@ export default function UploadPage({ onComplete }) {
           onClick={() => setMode('pdf')}
           style={{ padding: '8px 20px', fontSize: 'var(--font-size-sm)' }}
         >
-          📄 Upload PDF
+          Upload PDF
         </button>
         <button
           className={`btn ${mode === 'form' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setMode('form')}
           style={{ padding: '8px 20px', fontSize: 'var(--font-size-sm)' }}
         >
-          📝 Manual Entry
+          Manual Entry
         </button>
       </div>
 
@@ -162,7 +162,11 @@ export default function UploadPage({ onComplete }) {
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
           >
-            <div className="upload-icon">📁</div>
+            <div className="upload-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
             <h3>Drag & drop your documents here</h3>
             <p>or click to browse — PDF, PNG, JPEG, TIFF supported • <strong>Multiple files OK</strong></p>
             <input
@@ -178,11 +182,11 @@ export default function UploadPage({ onComplete }) {
           {files.length > 0 && (
             <div style={{ marginTop: 'var(--space-md)' }}>
               <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                📎 {files.length} file{files.length > 1 ? 's' : ''} selected
+                {files.length} file{files.length > 1 ? 's' : ''} selected
               </div>
               {files.map((f, i) => (
                 <div key={i} className="file-info" style={{ marginBottom: '6px' }}>
-                  <span>{f.type?.includes('pdf') ? '📄' : '🖼️'}</span>
+                  <span>{f.type?.includes('pdf') ? 'PDF' : 'IMG'}</span>
                   <div style={{ flex: 1 }}>
                     <strong>{f.name}</strong>
                     <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
@@ -207,7 +211,7 @@ export default function UploadPage({ onComplete }) {
               onClick={handleUploadFiles}
               disabled={files.length === 0}
             >
-              🚀 Process {files.length > 1 ? `${files.length} Documents` : 'Document'}
+              Process {files.length > 1 ? `${files.length} Documents` : 'Document'}
             </button>
           </div>
         </div>
@@ -217,7 +221,7 @@ export default function UploadPage({ onComplete }) {
           <div className="card-grid">
             {/* Patient */}
             <div className="card">
-              <div className="card-title">👤 Patient Information</div>
+              <div className="card-title">Patient Information</div>
               <FormField label="Patient Name" name="patientName" value={form.patientName} onChange={handleFormChange} />
               <FormField label="Date of Birth" name="dob" value={form.dob} onChange={handleFormChange} type="date" />
               <FormSelect label="Gender" name="gender" value={form.gender} onChange={handleFormChange}
@@ -227,7 +231,7 @@ export default function UploadPage({ onComplete }) {
 
             {/* Hospital */}
             <div className="card">
-              <div className="card-title">🏥 Hospital Details</div>
+              <div className="card-title">Hospital Details</div>
               <FormField label="Hospital Name" name="hospitalName" value={form.hospitalName} onChange={handleFormChange} />
               <FormField label="Doctor Name" name="doctorName" value={form.doctorName} onChange={handleFormChange} />
               <FormField label="Department" name="department" value={form.department} onChange={handleFormChange} />
@@ -235,7 +239,7 @@ export default function UploadPage({ onComplete }) {
 
             {/* Medical */}
             <div className="card">
-              <div className="card-title">🩺 Medical Details</div>
+              <div className="card-title">Medical Details</div>
               <FormField label="Primary Diagnosis" name="diagnosis" value={form.diagnosis} onChange={handleFormChange} />
               <FormField label="ICD-10 Code" name="icd10" value={form.icd10} onChange={handleFormChange} placeholder="e.g. I10" />
               <FormField label="Procedure" name="procedure" value={form.procedure} onChange={handleFormChange} />
@@ -244,7 +248,7 @@ export default function UploadPage({ onComplete }) {
 
             {/* Admission */}
             <div className="card">
-              <div className="card-title">🛏️ Admission</div>
+              <div className="card-title">Admission</div>
               <FormSelect label="Admission Type" name="admissionType" value={form.admissionType} onChange={handleFormChange}
                 options={['Planned', 'Emergency', 'Day Care']} />
               <FormSelect label="Ward Type" name="wardType" value={form.wardType} onChange={handleFormChange}
@@ -254,7 +258,7 @@ export default function UploadPage({ onComplete }) {
 
             {/* Billing */}
             <div className="card">
-              <div className="card-title">💰 Billing (₹)</div>
+              <div className="card-title">Billing (INR)</div>
               <FormField label="Room Charges" name="roomCharges" value={form.roomCharges} onChange={handleFormChange} type="number" />
               <FormField label="ICU Charges" name="icuCharges" value={form.icuCharges} onChange={handleFormChange} type="number" />
               <FormField label="Doctor Fees" name="doctorFees" value={form.doctorFees} onChange={handleFormChange} type="number" />
@@ -266,7 +270,7 @@ export default function UploadPage({ onComplete }) {
 
             {/* Insurance */}
             <div className="card">
-              <div className="card-title">🏛️ Insurance</div>
+              <div className="card-title">Insurance</div>
               <FormField label="Insurer Name" name="insurerName" value={form.insurerName} onChange={handleFormChange} />
               <FormField label="Pre-Auth Number" name="preAuthNumber" value={form.preAuthNumber} onChange={handleFormChange} />
             </div>
@@ -274,7 +278,7 @@ export default function UploadPage({ onComplete }) {
 
           <div className="action-bar">
             <button className="btn btn-primary" onClick={handleSubmitForm}>
-              🚀 Process Claim
+              Process Claim
             </button>
           </div>
         </div>

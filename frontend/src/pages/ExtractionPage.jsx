@@ -112,7 +112,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
         <span className="info-label">{label}</span>
         <span className="info-value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           {displayValue}
-          <span style={{ fontSize: '10px', opacity: 0.4 }}>✏️</span>
+          <span style={{ fontSize: '10px', opacity: 0.4 }}>edit</span>
         </span>
       </div>
     );
@@ -130,7 +130,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
         title="Click to toggle"
       >
         <span className="info-label">{label}</span>
-        <span className="info-value">{val ? '✅' : '❌'} <span style={{ fontSize: '10px', opacity: 0.4 }}>🔄</span></span>
+        <span className="info-value">{val ? '✓' : '✗'} <span style={{ fontSize: '10px', opacity: 0.4 }}>toggle</span></span>
       </div>
     );
   }
@@ -153,9 +153,6 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-md)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-              <span style={{ fontSize: '1.5rem' }}>
-                {riskLevel === 'low' ? '🛡️' : riskLevel === 'high' ? '🚨' : '⚠️'}
-              </span>
               <span style={{ fontWeight: 700, fontSize: 'var(--font-size-lg)' }}>
                 Document Integrity Check
               </span>
@@ -195,7 +192,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
           )}
           {riskLevel === 'low' && (!fraudDetection.findings || fraudDetection.findings.length === 0) && (
             <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--success)', fontWeight: 600 }}>
-              ✅ Document Verified — No Tampering Detected
+              Document Verified — No Tampering Detected
             </p>
           )}
         </div>
@@ -205,7 +202,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
       <div className="card-grid">
         {/* Patient Info */}
         <div className="card">
-          <div className="card-title">👤 Patient</div>
+          <div className="card-title">Patient</div>
           <EditableField section="patient" field="name" label="Name" value={editableClaim.patient?.name} />
           <EditableField section="patient" field="dob" label="DOB" value={editableClaim.patient?.dob} />
           <EditableField section="patient" field="gender" label="Gender" value={editableClaim.patient?.gender} />
@@ -216,7 +213,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
 
         {/* Hospital Info */}
         <div className="card">
-          <div className="card-title">🏥 Hospital</div>
+          <div className="card-title">Hospital</div>
           <EditableField section="hospital" field="name" label="Hospital" value={editableClaim.hospital?.name} />
           <EditableField section="hospital" field="doctor_name" label="Doctor" value={editableClaim.hospital?.doctor_name} />
           <EditableField section="hospital" field="department" label="Department" value={editableClaim.hospital?.department} />
@@ -225,7 +222,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
 
         {/* Medical Info */}
         <div className="card">
-          <div className="card-title">🩺 Medical</div>
+          <div className="card-title">Medical</div>
           <EditableField section="medical" field="primary_diagnosis" label="Diagnosis" value={editableClaim.medical?.primary_diagnosis} />
           <EditableField section="medical" field="icd10_code" label="ICD-10" value={editableClaim.medical?.icd10_code} />
           <EditableField section="medical" field="procedure" label="Procedure" value={editableClaim.medical?.procedure} />
@@ -234,7 +231,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
 
         {/* Admission Info */}
         <div className="card">
-          <div className="card-title">🛏️ Admission</div>
+          <div className="card-title">Admission</div>
           <EditableField section="admission" field="admission_date" label="Admission Date" value={editableClaim.admission?.admission_date} />
           <EditableField section="admission" field="discharge_date" label="Discharge Date" value={editableClaim.admission?.discharge_date} />
           <EditableField section="admission" field="admission_type" label="Type" value={editableClaim.admission?.admission_type} />
@@ -245,7 +242,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
 
         {/* Billing Breakdown */}
         <div className="card">
-          <div className="card-title">💰 Billing Breakdown</div>
+          <div className="card-title">Billing Breakdown</div>
           <EditableField section="billing" field="room_charges" label="Room Charges" value={editableClaim.billing?.room_charges} isMoney />
           <EditableField section="billing" field="icu_charges" label="ICU Charges" value={editableClaim.billing?.icu_charges} isMoney />
           <EditableField section="billing" field="doctor_fees" label="Doctor Fees" value={editableClaim.billing?.doctor_fees} isMoney />
@@ -262,7 +259,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
 
         {/* Documents & Insurance */}
         <div className="card">
-          <div className="card-title">📋 Documents & Insurance</div>
+          <div className="card-title">Documents & Insurance</div>
           <ToggleField section="documents" field="hospital_bill" label="Hospital Bill" />
           <ToggleField section="documents" field="discharge_summary" label="Discharge Summary" />
           <ToggleField section="documents" field="prescription" label="Prescription" />
@@ -299,7 +296,7 @@ export default function ExtractionPage({ claim, fraudDetection, onComplete, onBa
           disabled={isRevalidating}
           style={isRevalidating ? { opacity: 0.6 } : {}}
         >
-          {isRevalidating ? '⏳ Validating...' : '✅ Validate with Edits →'}
+          {isRevalidating ? 'Validating...' : 'Validate with Edits →'}
         </button>
       </div>
     </div>

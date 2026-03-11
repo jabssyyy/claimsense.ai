@@ -1,5 +1,5 @@
 """
-ClaimSense.ai - FastAPI Application Entry Point
+ClaimSense - FastAPI Application Entry Point
 
 AI-powered medical insurance claims processing for the Indian market.
 Catches administrative errors before claim submission, not after rejection.
@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
+from database import Base, engine
 
 # ---------------------------------------------------------------------------
 # Logging configuration
@@ -38,9 +39,17 @@ async def lifespan(app: FastAPI):
     upload_path.mkdir(parents=True, exist_ok=True)
     logger.info("Upload directory: %s", upload_path.resolve())
 
+    # Auto-create database tables if they don't exist
+    if engine is not None:
+        try:
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables verified / created.")
+        except Exception as e:
+            logger.error("Failed to create database tables: %s", e)
+
     # Log configuration summary
     logger.info("=" * 60)
-    logger.info("ClaimSense.ai starting up")
+    logger.info("ClaimSense starting up")
     logger.info("Debug mode: %s", settings.DEBUG)
     logger.info("Gemini model: %s", settings.GEMINI_MODEL)
     logger.info("API key configured: %s", bool(settings.GEMINI_API_KEY))
@@ -49,14 +58,14 @@ async def lifespan(app: FastAPI):
 
     yield  # Application runs here
 
-    logger.info("ClaimSense.ai shutting down")
+    logger.info("ClaimSense shutting down")
 
 
 # ---------------------------------------------------------------------------
 # FastAPI app instance
 # ---------------------------------------------------------------------------
 app = FastAPI(
-    title="ClaimSense.ai",
+    title="ClaimSense",
     description=(
         "AI-powered medical insurance claims processing for the Indian market. "
         "Catches administrative errors before claim submission - wrong codes, "
@@ -92,7 +101,7 @@ async def health_check():
     settings = get_settings()
     return {
         "status": "healthy",
-        "service": "ClaimSense.ai",
+        "service": "ClaimSense",
         "version": "0.1.0",
         "gemini_configured": bool(settings.GEMINI_API_KEY),
         "gemini_model": settings.GEMINI_MODEL,
@@ -103,7 +112,7 @@ async def health_check():
 async def root():
     """Root endpoint with API information."""
     return {
-        "service": "ClaimSense.ai",
+        "service": "ClaimSense",
         "version": "0.1.0",
         "description": "Medical insurance claims processing API for the Indian market",
         "docs": "/docs",

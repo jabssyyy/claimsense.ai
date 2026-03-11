@@ -1,5 +1,5 @@
 """
-ClaimSense.ai - Application Configuration
+ClaimSense - Application Configuration
 
 Loads settings from environment variables and .env file.
 Uses pydantic-settings for type validation and automatic .env loading.

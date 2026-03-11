@@ -1,5 +1,5 @@
 """
-ClaimSense.ai - Claims Routes
+ClaimSense - Claims Routes
 
 API endpoints for retrieving saved claims from the database.
 

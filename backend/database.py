@@ -7,16 +7,19 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-# Default to local docker-compose setup if not provided
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/claimsense")
+# Use SQLite by default for zero-config local dev; override with DATABASE_URL env var for PostgreSQL
+_default_db = "sqlite:///./claimsense.db"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", _default_db)
+
+# SQLite needs connect_args for thread safety with FastAPI
+_connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 
 try:
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=_connect_args)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    logger.info("Database engine configured successfully.")
+    logger.info("Database engine configured: %s", "SQLite" if "sqlite" in SQLALCHEMY_DATABASE_URL else "PostgreSQL")
 except Exception as e:
     logger.error(f"Failed to configure database engine: {e}")
-    # Create dummy engine and sessionmaker to prevent immediate crash if DB isn't running
     engine = None
     SessionLocal = None
 
